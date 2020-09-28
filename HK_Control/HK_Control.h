@@ -60,6 +60,21 @@ public:
 	*/
 	HKCAPI DWORD Login();
 	/**
+	 * @brief 是否已经登陆而未退出
+	 * @return true已经登陆而未退出，false已退出
+	*/
+	HKCAPI bool IsLogin();
+	/**
+	 * @brief 正在播放
+	 * @return true正在播放，fasle未正在播放
+	*/
+	HKCAPI bool IsPlay();
+	/**
+	 * @brief 是否正在播放
+	 * @return 
+	*/
+	HKCAPI bool IsRecording();
+	/**
 	 * @brief 播放预览
 	 * @param hwnd 预览画面所渲染的hwnd
 	 * @return 成功返回0，失败返回错误码

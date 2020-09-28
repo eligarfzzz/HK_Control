@@ -3,7 +3,8 @@
 #include"HCNetSDK.h"
 #include<iostream>
 #define MULTI_RECORD_ECP "StartRecord called multi times before EndRecord! Try EndRecord first"
-
+#define MULTI_PLAY_ECP "Camera Play called multi times before StopPlay! Try StopPlay first"
+#define MULTI_LOGIN_ECP "Camera Login called multi times before Logout! Try Logout first"
 
 class HKIniter {
 public:
@@ -29,7 +30,7 @@ HKCAPI HK_Control::HK_Control(std::string ip, int port, std::string user, std::s
 
 HKCAPI HK_Control::~HK_Control()
 {
-	if (_isRecording) 
+	if (_isRecording)
 	{
 		EndRecord();
 	}
@@ -45,25 +46,54 @@ HKCAPI HK_Control::~HK_Control()
 
 HKCAPI DWORD HK_Control::Login()
 {
-	NET_DVR_DEVICEINFO info;
-	//login
-	_loginID = NET_DVR_Login((char*)_ip.c_str(),
-		_port,
-		(char*)_user.c_str(),
-		(char*)_pwd.c_str(),
-		&info);
-	return GetLastError();
+	if (!IsLogin()) 
+	{
+		NET_DVR_DEVICEINFO info;
+		//login
+		_loginID = NET_DVR_Login((char*)_ip.c_str(),
+			_port,
+			(char*)_user.c_str(),
+			(char*)_pwd.c_str(),
+			&info);
+		return GetLastError();
+	}
+	else
+	{
+		throw std::exception(MULTI_LOGIN_ECP);
+	}
+}
+
+HKCAPI bool HK_Control::IsLogin()
+{
+	return _loginID != -1;
+}
+
+HKCAPI bool HK_Control::IsPlay()
+{
+	return _playID != -1;
+}
+
+bool HK_Control::IsRecording()
+{
+	return _isRecording;
 }
 
 HKCAPI DWORD HK_Control::Play(HWND hwnd)
 {
-	NET_DVR_CLIENTINFO playInfo;
-	playInfo.lChannel = 1;
-	playInfo.hPlayWnd = hwnd;
-	playInfo.sMultiCastIP = 0;
-	playInfo.lLinkMode = 0;
-	_playID = NET_DVR_RealPlay_V30(_loginID, &playInfo);
-	return GetLastError();
+	if (!IsPlay()) 
+	{
+		NET_DVR_CLIENTINFO playInfo;
+		playInfo.lChannel = 1;
+		playInfo.hPlayWnd = hwnd;
+		playInfo.sMultiCastIP = 0;
+		playInfo.lLinkMode = 0;
+		_playID = NET_DVR_RealPlay_V30(_loginID, &playInfo);
+		return GetLastError();
+	}
+	else
+	{
+		throw std::exception(MULTI_PLAY_ECP);
+	}
 }
 
 HKCAPI DWORD HK_Control::CaptureJPG(std::string filename)
@@ -80,16 +110,23 @@ HKCAPI DWORD HK_Control::CaptureBMP(std::string filename)
 }
 HKCAPI DWORD HK_Control::StartRecord(std::string filename)
 {
-	if (!_isRecording)
+	if (!IsRecording())
 	{
+		//不在录像
 		NET_DVR_SaveRealData(_playID, (char*)filename.c_str());
-		_isRecording = true;
+		DWORD res = GetLastError();
+		if (res == 0)
+		{
+			_isRecording = true;
+		}
+		return res;
 	}
 	else
 	{
+		//已经在录像
 		throw std::exception(MULTI_RECORD_ECP);
 	}
-	return  GetLastError();
+
 }
 HKCAPI DWORD HK_Control::EndRecord()
 {
