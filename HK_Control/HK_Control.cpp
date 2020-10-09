@@ -46,7 +46,7 @@ HKCAPI HK_Control::~HK_Control()
 
 HKCAPI DWORD HK_Control::Login()
 {
-	if (!IsLogin()) 
+	if (!IsLogin())
 	{
 		NET_DVR_DEVICEINFO info;
 		//login
@@ -55,7 +55,14 @@ HKCAPI DWORD HK_Control::Login()
 			(char*)_user.c_str(),
 			(char*)_pwd.c_str(),
 			&info);
-		return GetLastError();
+		if (_loginID != -1)
+		{
+			return 0;
+		}
+		else
+		{
+			return GetLastError();
+		}
 	}
 	else
 	{
@@ -80,7 +87,7 @@ bool HK_Control::IsRecording()
 
 HKCAPI DWORD HK_Control::Play(HWND hwnd)
 {
-	if (!IsPlay()) 
+	if (!IsPlay())
 	{
 		NET_DVR_CLIENTINFO playInfo;
 		playInfo.lChannel = 1;
@@ -88,7 +95,14 @@ HKCAPI DWORD HK_Control::Play(HWND hwnd)
 		playInfo.sMultiCastIP = 0;
 		playInfo.lLinkMode = 0;
 		_playID = NET_DVR_RealPlay_V30(_loginID, &playInfo);
-		return GetLastError();
+		if (_playID != -1)
+		{
+			return 0;
+		}
+		else
+		{
+			return GetLastError();
+		}
 	}
 	else
 	{
@@ -113,13 +127,15 @@ HKCAPI DWORD HK_Control::StartRecord(std::string filename)
 	if (!IsRecording())
 	{
 		//²»ÔÚÂ¼Ïñ
-		NET_DVR_SaveRealData(_playID, (char*)filename.c_str());
-		DWORD res = GetLastError();
-		if (res == 0)
+		if (NET_DVR_SaveRealData(_playID, (char*)filename.c_str()))
 		{
 			_isRecording = true;
+			return 0;
 		}
-		return res;
+		else
+		{
+			return GetLastError();
+		}
 	}
 	else
 	{
@@ -130,9 +146,14 @@ HKCAPI DWORD HK_Control::StartRecord(std::string filename)
 }
 HKCAPI DWORD HK_Control::EndRecord()
 {
-	NET_DVR_StopSaveRealData(_playID);
-	_isRecording = false;
-	return  GetLastError();
+	if (NET_DVR_StopSaveRealData(_playID)) 
+	{
+		return 0;
+	}
+	else 
+	{
+		return GetLastError();
+	}
 }
 HKCAPI DWORD HK_Control::StopPlay()
 {
